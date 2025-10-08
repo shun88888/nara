@@ -1,16 +1,15 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBookingStore } from '../../../src/stores/booking';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { normalizePhone, isValidPhone } from '../../../src/lib/phone';
+import { isValidPhone } from '../../../src/lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 const STORAGE_KEY = '@booking_info';
 
 export default function BookingConfirm() {
-  const { confirmBooking } = useBookingStore();
+  const { experienceId } = useLocalSearchParams<{ experienceId?: string }>();
   const [childName, setChildName] = useState('');
   const [age, setAge] = useState('');
   const [guardianName, setGuardianName] = useState('');
@@ -18,7 +17,6 @@ export default function BookingConfirm() {
   const [coupon, setCoupon] = useState('');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(false);
-  const [step, setStep] = useState<'input'|'confirm'>('input');
   const [saveInfo, setSaveInfo] = useState(false);
 
   // Load saved info on mount
@@ -71,7 +69,16 @@ export default function BookingConfirm() {
     } else {
       clearSavedInfo();
     }
-    setStep('confirm');
+    // Save booking info to pass to next screens
+    const bookingData = {
+      childName,
+      age,
+      guardianName,
+      phone,
+      coupon,
+      notes,
+    };
+    router.push(`/(user)/booking/payment?experienceId=${experienceId}&bookingData=${encodeURIComponent(JSON.stringify(bookingData))}`);
   };
 
   const phoneOk = isValidPhone(phone);
@@ -81,10 +88,7 @@ export default function BookingConfirm() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-        <Text className="text-black text-2xl font-bold mb-6">{step === 'input' ? '予約情報の入力' : '最終確認'}</Text>
-
-      {step === 'input' ? (
-        <>
+        <Text className="text-black text-2xl font-bold mb-6">予約情報の入力</Text>
           {/* Participant Info */}
           <View className="mb-6">
             <View className="flex-row items-center mb-3">
@@ -210,58 +214,13 @@ export default function BookingConfirm() {
             </View>
           </View>
 
-          <TouchableOpacity
-            disabled={!canNext}
-            className={`rounded-lg py-4 ${canNext ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'}`}
-            onPress={handleNextStep}
-          >
-            <Text className={`text-center ${canNext ? 'text-white' : 'text-[#999]'} font-bold text-base`}>確認画面へ進む</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <View className="bg-[#F8F8F8] p-4 rounded-lg mb-6">
-            <View className="mb-4 pb-4 border-b border-[#E5E5E5]">
-              <Text className="text-[#666] text-sm mb-1">参加者</Text>
-              <Text className="text-black text-lg font-medium">{childName}（{age}歳）</Text>
-            </View>
-
-            <View className="mb-4 pb-4 border-b border-[#E5E5E5]">
-              <Text className="text-[#666] text-sm mb-1">保護者</Text>
-              <Text className="text-black text-lg font-medium">{guardianName}</Text>
-              <Text className="text-black text-base mt-1">{normalizePhone(phone)}</Text>
-            </View>
-
-            {coupon && (
-              <View className="mb-4 pb-4 border-b border-[#E5E5E5]">
-                <Text className="text-[#666] text-sm mb-1">クーポンコード</Text>
-                <Text className="text-black text-base">{coupon}</Text>
-              </View>
-            )}
-
-            {notes && (
-              <View>
-                <Text className="text-[#666] text-sm mb-1">お伝えしたい情報</Text>
-                <Text className="text-black text-base leading-6">{notes}</Text>
-              </View>
-            )}
-          </View>
-
-          <TouchableOpacity
-            className="rounded-lg py-4 bg-[#7B68EE] mb-3"
-            onPress={() => { const b = confirmBooking(); router.replace(`/(user)/qr/${b.id}`); }}
-          >
-            <Text className="text-center text-white font-bold text-base">予約を確定する</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="rounded-lg py-4 border-2 border-[#E5E5E5]"
-            onPress={() => setStep('input')}
-          >
-            <Text className="text-center text-black font-medium">内容を修正する</Text>
-          </TouchableOpacity>
-        </>
-      )}
+        <TouchableOpacity
+          disabled={!canNext}
+          className={`rounded-lg py-4 ${canNext ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'}`}
+          onPress={handleNextStep}
+        >
+          <Text className={`text-center ${canNext ? 'text-white' : 'text-[#999]'} font-bold text-base`}>支払い方法を選択</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

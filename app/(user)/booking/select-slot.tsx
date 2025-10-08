@@ -249,7 +249,7 @@ export default function SelectSlot() {
           className={`flex-1 ml-2 py-3 rounded-lg ${
             selectedDate && selectedTimeSlot ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'
           }`}
-          onPress={() => selectedDate && selectedTimeSlot && router.push('/(user)/booking/confirm')}
+          onPress={() => selectedDate && selectedTimeSlot && router.push(`/(user)/booking/confirm?experienceId=${experienceId}`)}
           disabled={!selectedDate || !selectedTimeSlot}
         >
           <Text className="text-center text-white font-medium">

@@ -268,7 +268,7 @@ export default function ExperienceDetail() {
           </View>
 
           {/* Provider Info */}
-          <View className="py-4">
+          <View className="py-4 border-b border-[#E5E5E5]">
             <Text className="text-black text-lg font-bold mb-3">教室について</Text>
             <View className="flex-row items-start">
               <View className="w-16 h-16 bg-[#f0f0f0] rounded-lg mr-3 items-center justify-center">
@@ -279,6 +279,171 @@ export default function ExperienceDetail() {
                 <Text className="text-[#666] text-sm leading-5">
                   地域密着で10年以上の実績。お子様一人ひとりの個性を大切にした指導を心がけています。
                 </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Classroom Features */}
+          <View className="py-6">
+            <Text className="text-black text-2xl font-bold mb-2 text-center">この教室の特徴</Text>
+            <Text className="text-[#666] text-center mb-6">
+              お子様の「好き」を「得意」に変える環境
+            </Text>
+
+            {/* Feature 1 */}
+            <View className="mb-6">
+              <View className="bg-[#F0F8FF] rounded-2xl overflow-hidden mb-3">
+                <View className="w-full h-48 bg-[#E3F2FD] items-center justify-center">
+                  <Ionicons name="people" size={60} color="#7B68EE" />
+                </View>
+              </View>
+              <Text className="text-black text-xl font-bold mb-2">少人数制で手厚いサポート</Text>
+              <Text className="text-[#666] leading-6 mb-2">
+                1クラス最大6名の少人数制。講師の目が一人ひとりに行き届き、お子様のペースに合わせた丁寧な指導を実現しています。
+              </Text>
+              <View className="flex-row flex-wrap">
+                <View className="bg-[#F0F8FF] px-3 py-1.5 rounded-full mr-2 mb-2">
+                  <Text className="text-[#7B68EE] text-xs font-medium">最大6名</Text>
+                </View>
+                <View className="bg-[#F0F8FF] px-3 py-1.5 rounded-full mr-2 mb-2">
+                  <Text className="text-[#7B68EE] text-xs font-medium">個別フォロー</Text>
+                </View>
+                <View className="bg-[#F0F8FF] px-3 py-1.5 rounded-full mb-2">
+                  <Text className="text-[#7B68EE] text-xs font-medium">質問しやすい</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Feature 2 */}
+            <View className="mb-6">
+              <View className="bg-[#FFF9E6] rounded-2xl overflow-hidden mb-3">
+                <View className="w-full h-48 bg-[#FFF3E0] items-center justify-center">
+                  <Ionicons name="school" size={60} color="#FF9500" />
+                </View>
+              </View>
+              <Text className="text-black text-xl font-bold mb-2">経験豊富な専門講師</Text>
+              <Text className="text-[#666] leading-6 mb-3">
+                業界歴10年以上のベテラン講師が在籍。子どもの発達段階に合わせた指導法で、楽しく学びながら確実にスキルアップ。
+              </Text>
+              <View className="bg-[#F8F8F8] p-3 rounded-lg">
+                <View className="flex-row items-center mb-2">
+                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                  <Text className="text-black text-sm ml-2">資格保有講師が指導</Text>
+                </View>
+                <View className="flex-row items-center mb-2">
+                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                  <Text className="text-black text-sm ml-2">定期的な研修で指導力向上</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                  <Text className="text-black text-sm ml-2">子どもとの接し方を熟知</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Feature 3 */}
+            <View className="mb-6">
+              <View className="bg-[#F0FFF4] rounded-2xl overflow-hidden mb-3">
+                <View className="w-full h-48 bg-[#E8F5E9] items-center justify-center">
+                  <Ionicons name="construct" size={60} color="#4CAF50" />
+                </View>
+              </View>
+              <Text className="text-black text-xl font-bold mb-2">充実の設備と教材</Text>
+              <Text className="text-[#666] leading-6 mb-2">
+                最新の機材や教材を完備。安全性にも配慮した明るく清潔な教室で、お子様が集中して学べる環境を整えています。
+              </Text>
+              <View className="flex-row items-start mb-2">
+                <Text className="text-base mr-2 text-[#4CAF50]">●</Text>
+                <Text className="text-black text-sm flex-1">最新の教材・機材を常に導入</Text>
+              </View>
+              <View className="flex-row items-start mb-2">
+                <Text className="text-base mr-2 text-[#4CAF50]">●</Text>
+                <Text className="text-black text-sm flex-1">明るく広々とした専用スペース</Text>
+              </View>
+              <View className="flex-row items-start">
+                <Text className="text-base mr-2 text-[#4CAF50]">●</Text>
+                <Text className="text-black text-sm flex-1">安全対策を徹底した環境</Text>
+              </View>
+            </View>
+
+            {/* Feature 4 */}
+            <View className="mb-6">
+              <View className="bg-[#FFF0F5] rounded-2xl overflow-hidden mb-3">
+                <View className="w-full h-48 bg-[#FCE4EC] items-center justify-center">
+                  <Ionicons name="heart" size={60} color="#FF6B9D" />
+                </View>
+              </View>
+              <Text className="text-black text-xl font-bold mb-2">保護者との連携を大切に</Text>
+              <Text className="text-[#666] leading-6 mb-3">
+                毎回のレッスン後に進捗をお知らせ。定期的な面談で成長を共有し、ご家庭と一緒にお子様をサポートします。
+              </Text>
+              <View className="border-l-4 border-[#FF6B9D] pl-3 bg-[#FFF0F5] p-3 rounded-r-lg">
+                <Text className="text-black text-sm italic">
+                  「子どもの小さな成長も見逃さず報告してくれるので、親として安心して預けられます」
+                </Text>
+                <Text className="text-[#999] text-xs mt-2">- 保護者の声</Text>
+              </View>
+            </View>
+
+            {/* Stats */}
+            <View className="bg-gradient-to-b from-[#F8F8F8] to-white rounded-2xl p-4 mb-6">
+              <Text className="text-black text-lg font-bold mb-4 text-center">実績</Text>
+              <View className="flex-row flex-wrap justify-between">
+                <View className="w-[48%] bg-white rounded-xl p-4 mb-3" style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}>
+                  <Text className="text-[#7B68EE] text-3xl font-bold mb-1">10年+</Text>
+                  <Text className="text-[#666] text-sm">運営実績</Text>
+                </View>
+
+                <View className="w-[48%] bg-white rounded-xl p-4 mb-3" style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}>
+                  <Text className="text-[#FF9500] text-3xl font-bold mb-1">500名+</Text>
+                  <Text className="text-[#666] text-sm">卒業生</Text>
+                </View>
+
+                <View className="w-[48%] bg-white rounded-xl p-4" style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}>
+                  <Text className="text-[#4CAF50] text-3xl font-bold mb-1">95%</Text>
+                  <Text className="text-[#666] text-sm">満足度</Text>
+                </View>
+
+                <View className="w-[48%] bg-white rounded-xl p-4" style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}>
+                  <Text className="text-[#FF6B9D] text-3xl font-bold mb-1">4.8</Text>
+                  <Text className="text-[#666] text-sm">平均評価</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* CTA */}
+            <View className="bg-[#7B68EE] rounded-2xl p-6 items-center">
+              <Text className="text-white text-xl font-bold mb-2">まずは体験から</Text>
+              <Text className="text-white/80 text-center mb-4">
+                お子様に合うか、実際の雰囲気を{'\n'}体験レッスンで確かめてみませんか？
+              </Text>
+              <View className="flex-row items-center">
+                <Ionicons name="gift-outline" size={20} color="#fff" />
+                <Text className="text-white font-medium ml-2">体験レッスン特別価格</Text>
               </View>
             </View>
           </View>
