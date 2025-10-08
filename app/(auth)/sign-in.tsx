@@ -5,11 +5,19 @@ import { useState } from 'react';
 import { useAuthStore } from '../../src/stores/auth';
 
 export default function SignIn() {
-  const { session, signin, error } = useAuthStore();
+  const { session, signin, error, loading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  if (session) return <Redirect href="/(onboarding)/role-select" />;
+  // Simple redirect based on session
+  // If session exists, redirect based on role
+  if (session?.role === 'provider') {
+    return <Redirect href="/(provider)/(tabs)/today" />;
+  }
+
+  if (session?.role === 'user') {
+    return <Redirect href="/(user)/(tabs)/home" />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -39,30 +47,39 @@ export default function SignIn() {
 
       <View className="w-full mt-4 border-t border-[#E5E5E5] pt-4">
         <Text className="text-center text-[#666] text-sm mb-3">開発用テストログイン</Text>
+
+        {/* User test account */}
+        <TouchableOpacity
+          className="w-full bg-[#007AFF] rounded-md py-3 mb-2"
+          onPress={() => {
+            setEmail('user1@example.com');
+            setPassword('password123');
+          }}
+        >
+          <Text className="text-center text-white font-medium">👤 ユーザー1でログイン</Text>
+        </TouchableOpacity>
+
+        {/* Provider test accounts */}
+        <View className="w-full mt-2 mb-2">
+          <Text className="text-center text-[#999] text-xs mb-2">プロバイダー</Text>
+        </View>
         <TouchableOpacity
           className="w-full bg-[#f5f5f5] rounded-md py-3 mb-2"
           onPress={() => {
-            // テストユーザーとしてログイン（Supabase認証なし）
-            useAuthStore.setState({
-              session: { userId: 'test-user', email: 'test@example.com' },
-              error: null
-            });
+            setEmail('provider1@example.com');
+            setPassword('password123');
           }}
         >
-          <Text className="text-center text-black font-medium">ユーザーとしてログイン</Text>
+          <Text className="text-center text-black font-medium">🏢 プロバイダー1でログイン</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="w-full bg-[#f5f5f5] rounded-md py-3"
           onPress={() => {
-            // テストプロバイダーとしてログイン（Supabase認証なし）
-            useAuthStore.setState({
-              session: { userId: 'test-provider', email: 'provider@example.com' },
-              role: 'provider',
-              error: null
-            });
+            setEmail('provider2@example.com');
+            setPassword('password123');
           }}
         >
-          <Text className="text-center text-black font-medium">提供者としてログイン</Text>
+          <Text className="text-center text-black font-medium">🏢 プロバイダー2でログイン</Text>
         </TouchableOpacity>
       </View>
       </View>

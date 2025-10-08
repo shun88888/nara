@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { useExperienceStore } from '../../../src/stores/experience';
@@ -48,7 +49,9 @@ export default function Home() {
             source={{ uri: item.photos[0] }}
             className="w-full"
             style={{ height: height * 0.7 }}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View

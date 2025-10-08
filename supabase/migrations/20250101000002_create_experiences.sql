@@ -1,6 +1,6 @@
 -- Create experiences table
 CREATE TABLE public.experiences (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider_id UUID NOT NULL REFERENCES public.providers(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,

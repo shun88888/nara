@@ -51,9 +51,9 @@ export async function getUserBookings(userId: string): Promise<BookingWithExperi
     .from('bookings')
     .select(`
       *,
-      experiences!bookings_experience_id_fkey(
+      experiences(
         title,
-        providers!experiences_provider_id_fkey(business_name)
+        providers(business_name)
       )
     `)
     .eq('user_id', userId)
@@ -101,9 +101,9 @@ export async function getUpcomingBookings(userId: string): Promise<BookingWithEx
     .from('bookings')
     .select(`
       *,
-      experiences!bookings_experience_id_fkey(
+      experiences(
         title,
-        providers!experiences_provider_id_fkey(business_name)
+        providers(business_name)
       )
     `)
     .eq('user_id', userId)
@@ -132,9 +132,9 @@ export async function getPastBookings(userId: string): Promise<BookingWithExperi
     .from('bookings')
     .select(`
       *,
-      experiences!bookings_experience_id_fkey(
+      experiences(
         title,
-        providers!experiences_provider_id_fkey(business_name)
+        providers(business_name)
       )
     `)
     .eq('user_id', userId)

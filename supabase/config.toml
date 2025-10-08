@@ -27,4 +27,3 @@ port = 54323
 
 [functions]
 # Edge Functions configuration
-enabled = true

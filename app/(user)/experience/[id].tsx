@@ -1,26 +1,87 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useExperienceStore } from '../../../src/stores/experience';
-import { useState } from 'react';
+import { useExperienceStore, type Experience } from '../../../src/stores/experience';
+import { useFavoriteStore } from '../../../src/stores/favorite';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ExperienceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getExperienceById } = useExperienceStore();
-  const exp = id ? getExperienceById(id) : null;
+  const { getExperienceById, getCachedExperienceById } = useExperienceStore();
+  const { isFavorite, addFavorite, removeFavorite } = useFavoriteStore();
+  const [exp, setExp] = useState<Experience | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  if (!exp) return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-black mb-3">体験が見つかりません</Text>
-      <TouchableOpacity className="border border-[#E5E5E5] px-4 py-2 rounded-md" onPress={() => router.back()}>
-        <Text className="text-black">戻る</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const isExpFavorite = exp ? isFavorite(exp.id) : false;
+
+  const handleToggleFavorite = () => {
+    if (!exp) return;
+
+    if (isExpFavorite) {
+      removeFavorite(exp.id);
+    } else {
+      addFavorite({
+        id: exp.id,
+        title: exp.title,
+        providerName: exp.providerName,
+        priceYen: exp.priceYen,
+        photos: exp.photos,
+        targetAge: exp.targetAge,
+        area: exp.area,
+        addedAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  useEffect(() => {
+    async function loadExperience() {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
+      // Try to get from cache first
+      const cached = getCachedExperienceById(id);
+      if (cached) {
+        setExp(cached);
+        setLoading(false);
+        return;
+      }
+
+      // Otherwise fetch from API
+      setLoading(true);
+      const data = await getExperienceById(id);
+      setExp(data);
+      setLoading(false);
+    }
+
+    loadExperience();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text className="text-black mt-4">読み込み中...</Text>
+      </View>
+    );
+  }
+
+  if (!exp) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text className="text-black mb-3">体験が見つかりません</Text>
+        <TouchableOpacity className="border border-[#E5E5E5] px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-black">戻る</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
@@ -31,7 +92,10 @@ export default function ExperienceDetail() {
             <Image
               source={{ uri: exp.photos[0] }}
               style={{ width: SCREEN_WIDTH, height: '100%' }}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              priority="high"
             />
           ) : (
             <View className="w-full h-full bg-[#f0f0f0] items-center justify-center">
@@ -71,6 +135,7 @@ export default function ExperienceDetail() {
 
               <TouchableOpacity
                 className="w-12 h-12 rounded-full bg-white items-center justify-center mr-2"
+                onPress={handleToggleFavorite}
                 style={{
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
@@ -79,7 +144,11 @@ export default function ExperienceDetail() {
                   elevation: 3
                 }}
               >
-                <Ionicons name="heart-outline" size={22} color="#000" />
+                <Ionicons
+                  name={isExpFavorite ? "heart" : "heart-outline"}
+                  size={22}
+                  color={isExpFavorite ? "#FF6B9D" : "#000"}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity

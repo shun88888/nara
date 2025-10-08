@@ -1,22 +1,33 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { useAuthStore } from '../../../src/stores/auth';
 import { useBookingStore } from '../../../src/stores/booking';
+import { useFavoriteStore } from '../../../src/stores/favorite';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Account() {
-  const { signout } = useAuthStore();
-  const { upcoming, past } = useBookingStore();
+  const { session, profile, signout, loadProfile } = useAuthStore();
+  const { upcoming, past, fetchBookings } = useBookingStore();
+  const { favorites } = useFavoriteStore();
+
+  useEffect(() => {
+    if (session?.userId) {
+      loadProfile(session.userId);
+      fetchBookings(session.userId);
+    }
+  }, [session?.userId]);
 
   const menuItems = [
-    { icon: 'person-outline', title: 'プロフィール編集' },
-    { icon: 'calendar-outline', title: '予約履歴' },
-    { icon: 'heart-outline', title: 'お気に入り' },
-    { icon: 'card-outline', title: '支払い方法' },
-    { icon: 'notifications-outline', title: '通知設定' },
-    { icon: 'help-circle-outline', title: 'ヘルプ・サポート' },
-    { icon: 'document-text-outline', title: '利用規約' },
-    { icon: 'shield-checkmark-outline', title: 'プライバシーポリシー' },
+    { icon: 'person-outline', title: 'プロフィール編集', route: '/(user)/profile/edit' },
+    { icon: 'calendar-outline', title: '予約履歴', route: '/(user)/history' },
+    { icon: 'heart-outline', title: 'お気に入り', route: '/(user)/favorites' },
+    { icon: 'card-outline', title: '支払い方法', route: '/(user)/payment-methods' },
+    { icon: 'notifications-outline', title: '通知設定', route: '/(user)/settings/notifications' },
+    { icon: 'help-circle-outline', title: 'ヘルプ・サポート', route: '/(user)/help' },
+    { icon: 'document-text-outline', title: '利用規約', route: '/(user)/legal/terms' },
+    { icon: 'shield-checkmark-outline', title: 'プライバシーポリシー', route: '/(user)/legal/privacy' },
   ];
 
   return (
@@ -29,18 +40,23 @@ export default function Account() {
 
         {/* Profile Section */}
         <View className="px-4 mb-6">
-          <View className="bg-[#F8F8F8] rounded-xl p-4">
+          <TouchableOpacity
+            className="bg-[#F8F8F8] rounded-xl p-4"
+            onPress={() => router.push('/(user)/profile/edit')}
+          >
             <View className="flex-row items-center mb-4">
               <View className="w-16 h-16 rounded-full bg-white border-2 border-[#E5E5E5] items-center justify-center mr-4">
                 <Ionicons name="person" size={32} color="#666" />
               </View>
               <View className="flex-1">
-                <Text className="text-black text-xl font-bold mb-1">山田 太郎</Text>
-                <Text className="text-[#666] text-sm">test@example.com</Text>
+                <Text className="text-black text-xl font-bold mb-1">
+                  {profile?.last_name && profile?.first_name
+                    ? `${profile.last_name} ${profile.first_name}`
+                    : 'ユーザー'}
+                </Text>
+                <Text className="text-[#666] text-sm">{session?.email}</Text>
               </View>
-              <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={24} color="#999" />
-              </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={24} color="#999" />
             </View>
 
             {/* Stats */}
@@ -54,11 +70,11 @@ export default function Account() {
                 <Text className="text-[#666] text-xs mt-1">予約中</Text>
               </View>
               <View className="flex-1 items-center border-l border-[#E5E5E5]">
-                <Text className="text-black text-2xl font-bold">0</Text>
+                <Text className="text-black text-2xl font-bold">{favorites.length}</Text>
                 <Text className="text-[#666] text-xs mt-1">お気に入り</Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Menu Items */}
@@ -67,10 +83,14 @@ export default function Account() {
             <TouchableOpacity
               key={index}
               className="flex-row items-center justify-between py-4 border-b border-[#F0F0F0]"
+              onPress={() => item.route && router.push(item.route as any)}
+              disabled={!item.route}
             >
               <View className="flex-row items-center flex-1">
                 <Ionicons name={item.icon as any} size={22} color="#666" />
-                <Text className="text-black text-base ml-3">{item.title}</Text>
+                <Text className={`text-base ml-3 ${item.route ? 'text-black' : 'text-[#CCC]'}`}>
+                  {item.title}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#CCC" />
             </TouchableOpacity>
@@ -80,7 +100,10 @@ export default function Account() {
         {/* Settings Section */}
         <View className="px-4 mb-6">
           <Text className="text-[#666] text-sm font-medium mb-3">アプリ設定</Text>
-          <TouchableOpacity className="flex-row items-center justify-between py-4 border-b border-[#F0F0F0]">
+          <TouchableOpacity
+            className="flex-row items-center justify-between py-4 border-b border-[#F0F0F0]"
+            onPress={() => router.push('/(user)/settings')}
+          >
             <View className="flex-row items-center flex-1">
               <Ionicons name="settings-outline" size={22} color="#666" />
               <Text className="text-black text-base ml-3">設定</Text>

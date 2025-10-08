@@ -20,7 +20,7 @@ export async function getExperiences(params?: {
     .from('experiences')
     .select(`
       *,
-      providers!experiences_provider_id_fkey(business_name)
+      providers(business_name)
     `)
     .eq('is_published', true);
 
@@ -57,7 +57,7 @@ export async function getExperienceById(id: string): Promise<ExperienceWithProvi
     .from('experiences')
     .select(`
       *,
-      providers!experiences_provider_id_fkey(business_name, address, phone, email)
+      providers(business_name, address, phone, email)
     `)
     .eq('id', id)
     .eq('is_published', true)
@@ -85,7 +85,7 @@ export async function searchExperiences(query: string): Promise<ExperienceWithPr
     .from('experiences')
     .select(`
       *,
-      providers!experiences_provider_id_fkey(business_name)
+      providers(business_name)
     `)
     .eq('is_published', true)
     .or(`title.ilike.%${query}%,description.ilike.%${query}%`);

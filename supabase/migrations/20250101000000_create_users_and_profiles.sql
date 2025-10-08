@@ -1,6 +1,3 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create enum for user roles
 CREATE TYPE user_role AS ENUM ('user', 'provider');
 
@@ -15,7 +12,7 @@ CREATE TABLE public.users (
 
 -- Create profiles table
 CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   full_name TEXT,
   phone TEXT,
