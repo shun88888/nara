@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { useExperienceStore } from '../../../src/stores/experience';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 36) / 2; // 2 columns with tighter padding
@@ -24,8 +25,12 @@ export default function Home() {
   const rightColumn = experiences.filter((_, i) => i % 2 === 1);
 
   const renderCard = (item: any, index: number) => {
-    const heights = [220, 260, 200, 280, 240]; // Varied heights for Pinterest effect
+    const heights = [280, 320, 260, 340, 300]; // Varied heights for Pinterest effect
     const height = heights[index % heights.length];
+
+    // Generate random rating for demo
+    const rating = (4.0 + Math.random() * 1.0).toFixed(1);
+    const tags = item.category ? [item.category] : ['体験'];
 
     return (
       <TouchableOpacity
@@ -33,44 +38,78 @@ export default function Home() {
         className="mb-3 rounded-xl overflow-hidden"
         style={{
           width: CARD_WIDTH,
-          height,
           backgroundColor: '#ffffff',
           shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 5
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.2,
+          shadowRadius: 6,
+          elevation: 6,
+          borderWidth: 0.5,
+          borderColor: '#E5E5E5',
         }}
         onPress={() => router.push(`/(user)/experience/${item.id}`)}
       >
-        {/* Image - Takes up more space */}
-        {item.photos && item.photos.length > 0 ? (
-          <Image
-            source={{ uri: item.photos[0] }}
-            className="w-full"
-            style={{ height: height * 0.7 }}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View
-            className="bg-gradient-to-b from-[#f0f0f0] to-[#e0e0e0] items-center justify-center w-full"
-            style={{ height: height * 0.7 }}
-          >
-            <Text className="text-4xl">{['🎨', '🍳', '⚽', '🎭', '📚'][index % 5]}</Text>
-          </View>
-        )}
+        {/* Image with Tag Overlay */}
+        <View style={{ position: 'relative' }}>
+          {item.photos && item.photos.length > 0 ? (
+            <Image
+              source={{ uri: item.photos[0] }}
+              className="w-full"
+              style={{ height: height * 0.55 }}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View
+              className="bg-gradient-to-b from-[#f0f0f0] to-[#e0e0e0] items-center justify-center w-full"
+              style={{ height: height * 0.55 }}
+            >
+              <Text className="text-4xl">{['🎨', '🍳', '⚽', '🎭', '📚'][index % 5]}</Text>
+            </View>
+          )}
 
-        {/* Minimal Content */}
-        <View className="flex-1 px-2 py-2 justify-between">
-          <Text className="text-black text-sm font-semibold mb-1 leading-tight" numberOfLines={2}>
+          {/* Tag Overlay */}
+          <View className="absolute top-2 left-2">
+            <View className="bg-black/70 px-2 py-1 rounded-md">
+              <Text className="text-white text-xs font-medium">{tags[0]}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Content Section */}
+        <View className="px-2.5 py-2">
+          {/* Title */}
+          <Text className="text-black text-sm font-bold leading-tight" numberOfLines={2} style={{ marginBottom: 6 }}>
             {item.title}
           </Text>
 
+          {/* Provider Info - TikTok style */}
+          <View className="flex-row items-center" style={{ marginBottom: 3 }}>
+            <View className="w-4 h-4 rounded-full bg-[#F0F0F0] items-center justify-center mr-1.5">
+              <Ionicons name="business" size={10} color="#999" />
+            </View>
+            <Text className="text-[#666] text-xs flex-1" numberOfLines={1}>
+              {item.providerName}
+            </Text>
+          </View>
+
+          {/* Rating */}
+          <View className="flex-row items-center" style={{ marginBottom: 3 }}>
+            <Ionicons name="star" size={11} color="#FF9500" />
+            <Text className="text-black text-xs font-medium ml-1 mr-1">{rating}</Text>
+            <Text className="text-[#999] text-xs">(127)</Text>
+          </View>
+
+          {/* Price and Location */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-[#999] text-xs">{item.providerName}</Text>
-            <Text className="text-black text-sm font-bold">¥{item.priceYen.toLocaleString()}</Text>
+            <Text className="text-black text-sm font-bold">
+              ¥{item.priceYen.toLocaleString()}
+            </Text>
+            <View className="flex-row items-center">
+              <Ionicons name="location" size={11} color="#999" />
+              <Text className="text-[#999] text-xs ml-0.5">大井町</Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -16,6 +16,9 @@ export default function ExperienceDetail() {
   const [exp, setExp] = useState<Experience | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryTab, setGalleryTab] = useState<'official' | 'user'>('official');
+  const [selectedPhoto, setSelectedPhoto] = useState<{ uri: string; description?: string } | null>(null);
 
   const isExpFavorite = exp ? isFavorite(exp.id) : false;
 
@@ -186,6 +189,7 @@ export default function ExperienceDetail() {
           <View className="absolute bottom-4 right-4">
             <TouchableOpacity
               className="flex-row items-center bg-black/70 px-3 py-2 rounded-lg"
+              onPress={() => setShowGallery(true)}
             >
               <Ionicons name="images-outline" size={18} color="#fff" />
               <Text className="text-white text-sm font-medium ml-2">フォトギャラリー</Text>
@@ -518,6 +522,203 @@ export default function ExperienceDetail() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Photo Gallery Modal */}
+      <Modal
+        visible={showGallery}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowGallery(false)}
+      >
+        <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+          {/* Header */}
+          <View className="border-b border-[#E5E5E5]">
+            <View className="flex-row items-center justify-between px-4 py-3">
+              <TouchableOpacity onPress={() => setShowGallery(false)}>
+                <Ionicons name="close" size={28} color="#000" />
+              </TouchableOpacity>
+              <Text className="text-black text-lg font-bold">フォトギャラリー</Text>
+              <View style={{ width: 28 }} />
+            </View>
+
+            {/* Tab Switcher */}
+            <View className="flex-row px-4 pb-2">
+              <TouchableOpacity
+                className="mr-6 pb-2"
+                onPress={() => setGalleryTab('official')}
+                style={{
+                  borderBottomWidth: galleryTab === 'official' ? 2 : 0,
+                  borderBottomColor: '#FF6B35'
+                }}
+              >
+                <Text
+                  className="font-medium"
+                  style={{
+                    color: galleryTab === 'official' ? '#FF6B35' : '#999',
+                    fontSize: 15
+                  }}
+                >
+                  公式(29)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="pb-2"
+                onPress={() => setGalleryTab('user')}
+                style={{
+                  borderBottomWidth: galleryTab === 'user' ? 2 : 0,
+                  borderBottomColor: '#FF6B35'
+                }}
+              >
+                <Text
+                  className="font-medium"
+                  style={{
+                    color: galleryTab === 'user' ? '#FF6B35' : '#999',
+                    fontSize: 15
+                  }}
+                >
+                  ユーザー投稿(222343)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Gallery Content */}
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="p-2">
+              {galleryTab === 'official' ? (
+                // Official Photos
+                exp?.photos.map((photo, index) => {
+                  const description =
+                    index === 0
+                      ? '「アナと雪の女王」の世界が目の前に！新エリア「ワールドオブフローズン」が香港ディズニーランドにまもなく登場！'
+                      : index === 1
+                      ? '「ワンダリングオーケンズ スライディングスレイ」はスリル満点のジェットコースター。オラフやスヴェンと一緒にソリに乗って森を抜けよう。'
+                      : '最新の設備で楽しく体験できます';
+
+                  return (
+                    <View key={index} className="mb-4">
+                      <TouchableOpacity
+                        onPress={() =>
+                          setSelectedPhoto({
+                            uri: photo,
+                            description
+                          })
+                        }
+                      >
+                        <Image
+                          source={{ uri: photo }}
+                          style={{
+                            width: SCREEN_WIDTH - 16,
+                            height: 240,
+                            borderRadius: 12
+                          }}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                        {index < 2 && (
+                          <View className="absolute top-3 left-3 flex-row items-center">
+                            <View className="bg-white/90 px-2 py-1 rounded-md">
+                              <Text className="text-black text-xs font-medium">▲</Text>
+                            </View>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+
+                      {/* Description under image */}
+                      <View className="px-2 pt-2">
+                        <View className="flex-row items-start">
+                          <View className="mr-2 mt-0.5">
+                            <Text className="text-[#999] text-sm">▲</Text>
+                          </View>
+                          <Text className="text-[#333] text-sm leading-5 flex-1">
+                            {description}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                // User Photos - Mock data
+                <View className="flex-row flex-wrap justify-between">
+                  {[1, 2, 3, 4, 5, 6].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      className="w-[48%] mb-3"
+                      onPress={() =>
+                        setSelectedPhoto({
+                          uri: exp?.photos[0] || '',
+                          description: 'ユーザーからの投稿写真です'
+                        })
+                      }
+                    >
+                      <Image
+                        source={{ uri: exp?.photos[0] }}
+                        style={{
+                          width: '100%',
+                          height: 180,
+                          borderRadius: 8
+                        }}
+                        contentFit="cover"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Photo Detail Modal */}
+      <Modal
+        visible={selectedPhoto !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setSelectedPhoto(null)}
+      >
+        <View className="flex-1 bg-black/90">
+          <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
+            {/* Close Button */}
+            <View className="px-4 py-3">
+              <TouchableOpacity
+                className="self-end"
+                onPress={() => setSelectedPhoto(null)}
+              >
+                <Ionicons name="close" size={32} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Image */}
+            <View className="flex-1 items-center justify-center px-4">
+              <Image
+                source={{ uri: selectedPhoto?.uri || '' }}
+                style={{
+                  width: SCREEN_WIDTH - 32,
+                  height: SCREEN_HEIGHT * 0.5,
+                  borderRadius: 12
+                }}
+                contentFit="contain"
+              />
+
+              {/* Description */}
+              {selectedPhoto?.description && (
+                <View className="mt-6 px-4">
+                  <View className="flex-row items-start">
+                    <View className="mr-3 mt-1">
+                      <Text className="text-white text-lg">▲</Text>
+                    </View>
+                    <Text className="text-white text-base leading-6 flex-1">
+                      {selectedPhoto.description}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
 
       {/* Bottom Fixed Bar */}
       <SafeAreaView
