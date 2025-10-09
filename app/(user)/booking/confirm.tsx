@@ -1,7 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isValidPhone } from '../../../src/lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,14 @@ export default function BookingConfirm() {
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(false);
   const [saveInfo, setSaveInfo] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const childNameRef = useRef<View>(null);
+  const ageRef = useRef<View>(null);
+  const guardianNameRef = useRef<View>(null);
+  const phoneRef = useRef<View>(null);
+  const couponRef = useRef<View>(null);
+  const notesRef = useRef<View>(null);
 
   // Load saved info on mount
   useEffect(() => {
@@ -63,6 +71,18 @@ export default function BookingConfirm() {
     }
   };
 
+  const scrollToInput = (ref: React.RefObject<View>) => {
+    setTimeout(() => {
+      ref.current?.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({ y: y - 50, animated: true });
+        },
+        () => {}
+      );
+    }, 100);
+  };
+
   const handleNextStep = () => {
     if (saveInfo) {
       saveBookingInfo();
@@ -87,8 +107,26 @@ export default function BookingConfirm() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-        <Text className="text-black text-2xl font-bold mb-6">予約情報の入力</Text>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-[#E5E5E5]">
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-black">予約情報の入力</Text>
+        <View className="w-6" />
+      </View>
+
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1"
+          contentContainerStyle={{ padding: 16 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Participant Info */}
           <View className="mb-6">
             <View className="flex-row items-center mb-3">
@@ -97,22 +135,28 @@ export default function BookingConfirm() {
             </View>
             <View className="bg-[#F8F8F8] p-4 rounded-lg">
               <Text className="text-[#666] text-sm mb-2">お子様の氏名 *</Text>
-              <TextInput
-                placeholder="例: 山田 太郎"
-                placeholderTextColor="#999"
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
-                value={childName}
-                onChangeText={setChildName}
-              />
+              <View ref={childNameRef}>
+                <TextInput
+                  placeholder="例: 山田 太郎"
+                  placeholderTextColor="#999"
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
+                  value={childName}
+                  onChangeText={setChildName}
+                  onFocus={() => scrollToInput(childNameRef)}
+                />
+              </View>
               <Text className="text-[#666] text-sm mb-2">年齢 *</Text>
-              <TextInput
-                placeholder="3〜15"
-                placeholderTextColor="#999"
-                keyboardType="number-pad"
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
-                value={age}
-                onChangeText={setAge}
-              />
+              <View ref={ageRef}>
+                <TextInput
+                  placeholder="3〜15"
+                  placeholderTextColor="#999"
+                  keyboardType="number-pad"
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
+                  value={age}
+                  onChangeText={setAge}
+                  onFocus={() => scrollToInput(ageRef)}
+                />
+              </View>
               {!ageOk && age.length > 0 && (
                 <Text className="text-[#FF6B35] text-sm mt-1">3〜15歳の範囲で入力してください</Text>
               )}
@@ -127,22 +171,28 @@ export default function BookingConfirm() {
             </View>
             <View className="bg-[#F8F8F8] p-4 rounded-lg">
               <Text className="text-[#666] text-sm mb-2">保護者氏名 *</Text>
-              <TextInput
-                placeholder="例: 山田 花子"
-                placeholderTextColor="#999"
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
-                value={guardianName}
-                onChangeText={setGuardianName}
-              />
+              <View ref={guardianNameRef}>
+                <TextInput
+                  placeholder="例: 山田 花子"
+                  placeholderTextColor="#999"
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
+                  value={guardianName}
+                  onChangeText={setGuardianName}
+                  onFocus={() => scrollToInput(guardianNameRef)}
+                />
+              </View>
               <Text className="text-[#666] text-sm mb-2">電話番号 *</Text>
-              <TextInput
-                placeholder="例: 090-1234-5678"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
-                value={phone}
-                onChangeText={setPhone}
-              />
+              <View ref={phoneRef}>
+                <TextInput
+                  placeholder="例: 090-1234-5678"
+                  placeholderTextColor="#999"
+                  keyboardType="phone-pad"
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
+                  value={phone}
+                  onChangeText={setPhone}
+                  onFocus={() => scrollToInput(phoneRef)}
+                />
+              </View>
               {!phoneOk && phone.length > 0 && (
                 <Text className="text-[#FF6B35] text-sm mt-1">正しい電話番号を入力してください</Text>
               )}
@@ -157,34 +207,40 @@ export default function BookingConfirm() {
             </View>
             <View className="bg-[#F8F8F8] p-4 rounded-lg">
               <Text className="text-[#666] text-sm mb-2">クーポンコード</Text>
-              <TextInput
-                placeholder="お持ちの方のみ入力"
-                placeholderTextColor="#999"
-                autoCapitalize="characters"
-                maxLength={12}
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
-                value={coupon}
-                onChangeText={setCoupon}
-              />
+              <View ref={couponRef}>
+                <TextInput
+                  placeholder="お持ちの方のみ入力"
+                  placeholderTextColor="#999"
+                  autoCapitalize="characters"
+                  maxLength={12}
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 mb-3 text-black"
+                  value={coupon}
+                  onChangeText={setCoupon}
+                  onFocus={() => scrollToInput(couponRef)}
+                />
+              </View>
               <Text className="text-[#666] text-sm mb-2">お伝えしたい情報</Text>
-              <TextInput
-                placeholder="アレルギーや特記事項がありましたらご記入ください（120字まで）"
-                placeholderTextColor="#999"
-                multiline
-                maxLength={120}
-                numberOfLines={4}
-                textAlignVertical="top"
-                className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
-                style={{ minHeight: 80 }}
-                value={notes}
-                onChangeText={setNotes}
-              />
+              <View ref={notesRef}>
+                <TextInput
+                  placeholder="アレルギーや特記事項がありましたらご記入ください（120字まで）"
+                  placeholderTextColor="#999"
+                  multiline
+                  maxLength={120}
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  className="bg-white border border-[#E5E5E5] rounded-md px-4 py-3 text-black"
+                  style={{ minHeight: 80 }}
+                  value={notes}
+                  onChangeText={setNotes}
+                  onFocus={() => scrollToInput(notesRef)}
+                />
+              </View>
               <Text className="text-[#999] text-xs mt-1 text-right">{notes.length}/120</Text>
             </View>
           </View>
 
           {/* Save Info Toggle */}
-          <View className="flex-row items-center mb-4 bg-[#F0F8FF] p-3 rounded-lg">
+          <View className="flex-row items-center mb-4">
             <Switch
               value={saveInfo}
               onValueChange={setSaveInfo}
@@ -198,7 +254,7 @@ export default function BookingConfirm() {
           </View>
 
           {/* Terms */}
-          <View className="flex-row items-start mb-6">
+          <View className="flex-row items-center mb-6">
             <Switch
               value={terms}
               onValueChange={setTerms}
@@ -214,14 +270,15 @@ export default function BookingConfirm() {
             </View>
           </View>
 
-        <TouchableOpacity
-          disabled={!canNext}
-          className={`rounded-lg py-4 ${canNext ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'}`}
-          onPress={handleNextStep}
-        >
-          <Text className={`text-center ${canNext ? 'text-white' : 'text-[#999]'} font-bold text-base`}>支払い方法を選択</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            disabled={!canNext}
+            className={`rounded-lg py-4 ${canNext ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'}`}
+            onPress={handleNextStep}
+          >
+            <Text className={`text-center ${canNext ? 'text-white' : 'text-[#999]'} font-bold text-base`}>支払い方法を選択</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

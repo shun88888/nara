@@ -154,34 +154,6 @@ export default function ExperienceDetail() {
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                className="w-12 h-12 rounded-full bg-white items-center justify-center mr-2"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3
-                }}
-              >
-                <Ionicons name="time-outline" size={22} color="#000" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="w-12 h-12 rounded-full bg-white items-center justify-center relative"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3
-                }}
-              >
-                <Ionicons name="cart-outline" size={22} color="#000" />
-                <View className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#FF6B35] items-center justify-center">
-                  <Text className="text-white text-xs font-bold">2</Text>
-                </View>
-              </TouchableOpacity>
             </View>
           </SafeAreaView>
 
@@ -732,28 +704,14 @@ export default function ExperienceDetail() {
           elevation: 5
         }}
       >
-        <View className="px-4 py-3 flex-row items-center justify-between">
-        <View>
-          <Text className="text-black text-2xl font-bold">¥{exp.priceYen.toLocaleString()}</Text>
-          <Text className="text-[#00A67E] text-xs">ポイント +55</Text>
-        </View>
-
-        <View className="flex-row">
-          <TouchableOpacity
-            className="bg-[#FF9500] px-6 py-3 rounded-lg mr-2"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3
-            }}
-          >
-            <Text className="text-white text-base font-bold">カートに追加</Text>
-          </TouchableOpacity>
+        <View className="px-6 py-3 flex-row items-center justify-between">
+          <View className="pl-2">
+            <Text className="text-black text-2xl font-bold">¥{exp.priceYen.toLocaleString()}</Text>
+            <Text className="text-[#666] text-xs mt-1">所要時間: 約{exp.durationMin}分</Text>
+          </View>
 
           <TouchableOpacity
-            className="bg-[#FF6B35] px-6 py-3 rounded-lg"
+            className="bg-[#FF6B35] px-6 py-3 rounded-lg mr-2"
             style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -765,7 +723,6 @@ export default function ExperienceDetail() {
           >
             <Text className="text-white text-base font-bold">予約手続きへ</Text>
           </TouchableOpacity>
-        </View>
         </View>
       </SafeAreaView>
     </View>

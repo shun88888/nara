@@ -17,24 +17,10 @@ export default function Payment() {
       badge: '推奨',
     },
     {
-      id: 'konbini',
-      icon: 'storefront-outline',
-      title: 'コンビニ払い',
-      description: 'セブンイレブン、ファミマ、ローソン',
-      badge: null,
-    },
-    {
-      id: 'bank',
-      icon: 'business-outline',
-      title: '銀行振込',
-      description: '事前振込が必要です',
-      badge: null,
-    },
-    {
-      id: 'paypay',
-      icon: 'logo-paypal',
-      title: 'PayPay',
-      description: 'PayPayアプリで支払い',
+      id: 'onsite',
+      icon: 'cash-outline',
+      title: '現地払い',
+      description: '当日、現地でお支払いください',
       badge: null,
     },
   ];
@@ -158,16 +144,10 @@ export default function Payment() {
                 クレジットカード払いの場合、予約確定時に決済が完了します
               </Text>
             </View>
-            <View className="flex-row items-start mb-3">
-              <Ionicons name="information-circle-outline" size={18} color="#666" />
-              <Text className="text-[#666] text-sm ml-2 flex-1">
-                コンビニ払いの場合、予約から24時間以内にお支払いください
-              </Text>
-            </View>
             <View className="flex-row items-start">
               <Ionicons name="information-circle-outline" size={18} color="#666" />
               <Text className="text-[#666] text-sm ml-2 flex-1">
-                銀行振込の場合、入金確認後に予約が確定します
+                現地払いの場合、当日現地にて現金でお支払いください
               </Text>
             </View>
           </View>

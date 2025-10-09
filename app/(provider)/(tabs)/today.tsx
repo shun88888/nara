@@ -1,13 +1,15 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProviderStore } from '../../../src/stores/provider';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { verifyToken } from '../../../src/lib/qr';
 
 export default function ProviderToday() {
   const { today, checkIn } = useProviderStore();
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
+
+  const tokenInputRef = useRef<View>(null);
 
   const onVerify = () => {
     const res = verifyToken(token.trim());
@@ -19,15 +21,28 @@ export default function ProviderToday() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="p-4">
-        <Text className="text-black mb-2">手動チェックイン（トークン）</Text>
-        <TextInput value={token} onChangeText={setToken} placeholder="base64url.payload.signature" placeholderTextColor="#999" className="border border-[#E5E5E5] rounded-md px-4 py-3 mb-2 text-black" />
-        {error ? <Text className="text-[#d00] mb-2">{error}</Text> : null}
-        <TouchableOpacity className="bg-black rounded-md py-3" onPress={onVerify}>
-          <Text className="text-center text-white">検証してチェックイン</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View className="p-4">
+          <Text className="text-black mb-2">手動チェックイン（トークン）</Text>
+          <View ref={tokenInputRef}>
+            <TextInput
+              value={token}
+              onChangeText={setToken}
+              placeholder="base64url.payload.signature"
+              placeholderTextColor="#999"
+              className="border border-[#E5E5E5] rounded-md px-4 py-3 mb-2 text-black"
+            />
+          </View>
+          {error ? <Text className="text-[#d00] mb-2">{error}</Text> : null}
+          <TouchableOpacity className="bg-black rounded-md py-3" onPress={onVerify}>
+            <Text className="text-center text-white">検証してチェックイン</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
         data={today}
         keyExtractor={b => b.id}
         contentContainerStyle={{ padding: 16 }}
@@ -51,7 +66,8 @@ export default function ProviderToday() {
             <Text className="text-black text-center">本日の予約はありません</Text>
           </View>
         )}
-      />
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

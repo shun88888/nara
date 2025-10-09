@@ -1,7 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../../src/stores/auth';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,6 +13,13 @@ export default function EditProfile() {
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
 
+  const scrollViewRef = useRef<ScrollView>(null);
+  const lastNameRef = useRef<View>(null);
+  const firstNameRef = useRef<View>(null);
+  const phoneNumberRef = useRef<View>(null);
+  const postalCodeRef = useRef<View>(null);
+  const addressRef = useRef<View>(null);
+
   useEffect(() => {
     if (profile) {
       setFirstName(profile.first_name || '');
@@ -22,6 +29,18 @@ export default function EditProfile() {
       setAddress(profile.address || '');
     }
   }, [profile]);
+
+  const scrollToInput = (ref: React.RefObject<View>) => {
+    setTimeout(() => {
+      ref.current?.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({ y: y - 50, animated: true });
+        },
+        () => {}
+      );
+    }, 100);
+  };
 
   const handleSave = async () => {
     if (!session?.userId) return;
@@ -53,8 +72,17 @@ export default function EditProfile() {
         <View className="w-10" />
       </View>
 
-      <ScrollView className="flex-1">
-        <View className="px-4 py-6">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1"
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="px-4 py-6">
           {/* Profile Picture */}
           <View className="items-center mb-8">
             <View className="w-24 h-24 rounded-full bg-[#F0F0F0] items-center justify-center mb-3">
@@ -77,65 +105,80 @@ export default function EditProfile() {
           {/* Name */}
           <View className="mb-4">
             <Text className="text-[#666] text-sm mb-2">姓</Text>
-            <TextInput
-              className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
-              placeholder="山田"
-              placeholderTextColor="#999"
-              value={lastName}
-              onChangeText={setLastName}
-            />
+            <View ref={lastNameRef}>
+              <TextInput
+                className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
+                placeholder="山田"
+                placeholderTextColor="#999"
+                value={lastName}
+                onChangeText={setLastName}
+                onFocus={() => scrollToInput(lastNameRef)}
+              />
+            </View>
           </View>
 
           <View className="mb-4">
             <Text className="text-[#666] text-sm mb-2">名</Text>
-            <TextInput
-              className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
-              placeholder="太郎"
-              placeholderTextColor="#999"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
+            <View ref={firstNameRef}>
+              <TextInput
+                className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
+                placeholder="太郎"
+                placeholderTextColor="#999"
+                value={firstName}
+                onChangeText={setFirstName}
+                onFocus={() => scrollToInput(firstNameRef)}
+              />
+            </View>
           </View>
 
           {/* Phone Number */}
           <View className="mb-4">
             <Text className="text-[#666] text-sm mb-2">電話番号</Text>
-            <TextInput
-              className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
-              placeholder="090-1234-5678"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
+            <View ref={phoneNumberRef}>
+              <TextInput
+                className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
+                placeholder="090-1234-5678"
+                placeholderTextColor="#999"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                onFocus={() => scrollToInput(phoneNumberRef)}
+              />
+            </View>
           </View>
 
           {/* Postal Code */}
           <View className="mb-4">
             <Text className="text-[#666] text-sm mb-2">郵便番号</Text>
-            <TextInput
-              className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
-              placeholder="123-4567"
-              placeholderTextColor="#999"
-              keyboardType="number-pad"
-              value={postalCode}
-              onChangeText={setPostalCode}
-            />
+            <View ref={postalCodeRef}>
+              <TextInput
+                className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
+                placeholder="123-4567"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+                value={postalCode}
+                onChangeText={setPostalCode}
+                onFocus={() => scrollToInput(postalCodeRef)}
+              />
+            </View>
           </View>
 
           {/* Address */}
           <View className="mb-6">
             <Text className="text-[#666] text-sm mb-2">住所</Text>
-            <TextInput
-              className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
-              placeholder="東京都品川区大井町1-2-3"
-              placeholderTextColor="#999"
-              value={address}
-              onChangeText={setAddress}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
+            <View ref={addressRef}>
+              <TextInput
+                className="border border-[#E5E5E5] rounded-lg px-4 py-3 text-black"
+                placeholder="東京都品川区大井町1-2-3"
+                placeholderTextColor="#999"
+                value={address}
+                onChangeText={setAddress}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                onFocus={() => scrollToInput(addressRef)}
+              />
+            </View>
           </View>
 
           {/* Save Button */}
@@ -148,8 +191,9 @@ export default function EditProfile() {
               {loading ? '保存中...' : '保存する'}
             </Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

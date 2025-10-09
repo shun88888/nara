@@ -1,46 +1,65 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { getAvailableTimeSlots, getTimeSlotsForDate, type TimeSlot } from '../../../src/lib/time-slots';
 
 export default function SelectSlot() {
   const { experienceId } = useLocalSearchParams<{ experienceId: string }>();
-  const [selectedYear, setSelectedYear] = useState(2022);
-  const [selectedMonth, setSelectedMonth] = useState(6);
-  const [selectedDate, setSelectedDate] = useState<number | null>(10);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [availabilityMap, setAvailabilityMap] = useState<{ [key: number]: number }>({});
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
-  // Mock data - 日付ごとの空き枠数
-  const availabilityMap: { [key: number]: number } = {
-    8: 3,
-    9: 5,
-    10: 2,
-    11: 4,
-    13: 1,
-    14: 6,
-    15: 3,
-    16: 0,
-    17: 2,
-    18: 5,
-    20: 4,
-    21: 3,
-    22: 0,
-    23: 2,
-    24: 1,
-    25: 7,
-    27: 3,
-    28: 2,
-    29: 0,
-    30: 4,
-  };
+  // Fetch available slots for the current month
+  useEffect(() => {
+    if (!experienceId) return;
 
-  // Mock time slots for selected date
-  const timeSlots = [
-    { time: '10:00 ~ 12:00', available: 2 },
-    { time: '13:00 ~ 15:00', available: 3 },
-    { time: '15:30 ~ 17:30', available: 1 },
-  ];
+    const fetchSlots = async () => {
+      setLoading(true);
+      const result = await getAvailableTimeSlots(experienceId, selectedYear, selectedMonth);
+
+      if (result.success && result.data) {
+        // Create availability map
+        const map: { [key: number]: number } = {};
+        result.data.forEach((dateAvail) => {
+          const day = new Date(dateAvail.date).getDate();
+          map[day] = dateAvail.available_slots_count;
+        });
+        setAvailabilityMap(map);
+      }
+
+      setLoading(false);
+    };
+
+    fetchSlots();
+  }, [experienceId, selectedYear, selectedMonth]);
+
+  // Fetch time slots for selected date
+  useEffect(() => {
+    if (!experienceId || !selectedDate) {
+      setTimeSlots([]);
+      return;
+    }
+
+    const fetchTimeSlotsForDate = async () => {
+      const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      const result = await getTimeSlotsForDate(experienceId, dateStr);
+
+      if (result.success && result.data) {
+        setTimeSlots(result.data);
+      } else {
+        setTimeSlots([]);
+      }
+    };
+
+    fetchTimeSlotsForDate();
+  }, [experienceId, selectedYear, selectedMonth, selectedDate]);
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month, 0).getDate();
@@ -148,10 +167,10 @@ export default function SelectSlot() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-[#E5E5E5]">
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="#7B68EE" />
+          <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black">来店日時指定</Text>
-        <View className="w-7" />
+        <View className="w-6" />
       </View>
 
       <ScrollView className="flex-1">
@@ -190,45 +209,42 @@ export default function SelectSlot() {
         <View className="px-2 py-4">{renderCalendar()}</View>
 
         {/* Time Slot Selection */}
-        <View className="px-4 py-4 bg-[#F8F8F8]">
+        <View className="px-4 py-4">
           <Text className="text-base font-bold text-black mb-3">来店時刻</Text>
-          <View className="flex-row items-center bg-white rounded-lg px-4 py-3 border border-[#E5E5E5]">
-            <Text className="flex-1 text-base text-[#999]">
-              {selectedTimeSlot || '時刻指定なし'}
-            </Text>
-            <Text className="text-base text-[#999]">〜</Text>
-            <Text className="flex-1 text-right text-base text-[#999]">
-              {selectedTimeSlot ? '' : '時刻指定なし'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#999" />
-          </View>
 
-          {/* Time slots list (shown when date is selected) */}
+          {/* Time slots grid (shown when date is selected) */}
           {selectedDate && (
-            <View className="mt-3">
-              {timeSlots.map((slot, index) => (
-                <TouchableOpacity
-                  key={index}
-                  className={`bg-white rounded-lg px-4 py-3 mb-2 border ${
-                    selectedTimeSlot === slot.time ? 'border-[#7B68EE]' : 'border-[#E5E5E5]'
-                  }`}
-                  onPress={() => setSelectedTimeSlot(slot.time)}
-                  disabled={slot.available === 0}
-                >
-                  <View className="flex-row items-center justify-between">
+            <View className="flex-row flex-wrap">
+              {timeSlots.map((slot, index) => {
+                const isSelected = selectedTimeSlot?.id === slot.id;
+
+                return (
+                  <TouchableOpacity
+                    key={slot.id}
+                    className={`mr-3 mb-3 px-4 py-3 rounded-lg border ${
+                      isSelected ? 'bg-[#7B68EE] border-[#7B68EE]' : 'bg-white border-[#E5E5E5]'
+                    }`}
+                    onPress={() => setSelectedTimeSlot(slot)}
+                    disabled={slot.remaining_capacity === 0}
+                    style={{ minWidth: 100 }}
+                  >
                     <Text
-                      className={`text-base ${
-                        slot.available === 0 ? 'text-[#CCC]' : 'text-black'
-                      } font-medium`}
+                      className={`text-center font-medium ${
+                        isSelected ? 'text-white' : slot.remaining_capacity === 0 ? 'text-[#CCC]' : 'text-[#007AFF]'
+                      }`}
                     >
-                      {slot.time}
+                      {slot.start_time.substring(0, 5)}
                     </Text>
-                    <Text className={`text-sm ${slot.available === 0 ? 'text-[#CCC]' : 'text-[#666]'}`}>
-                      残り{slot.available}枠
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    {slot.remaining_capacity > 0 && (
+                      <Text className={`text-center text-xs mt-1 ${
+                        isSelected ? 'text-white/80' : 'text-[#999]'
+                      }`}>
+                        残り{slot.remaining_capacity}枠
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -249,7 +265,18 @@ export default function SelectSlot() {
           className={`flex-1 ml-2 py-3 rounded-lg ${
             selectedDate && selectedTimeSlot ? 'bg-[#7B68EE]' : 'bg-[#E5E5E5]'
           }`}
-          onPress={() => selectedDate && selectedTimeSlot && router.push(`/(user)/booking/confirm?experienceId=${experienceId}`)}
+          onPress={() => {
+            if (selectedDate && selectedTimeSlot) {
+              const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+              const bookingData = JSON.stringify({
+                date: dateStr,
+                startTime: selectedTimeSlot.start_time,
+                endTime: selectedTimeSlot.end_time,
+                slotId: selectedTimeSlot.id,
+              });
+              router.push(`/(user)/booking/confirm?experienceId=${experienceId}&bookingData=${encodeURIComponent(bookingData)}`);
+            }
+          }}
           disabled={!selectedDate || !selectedTimeSlot}
         >
           <Text className="text-center text-white font-medium">
@@ -257,6 +284,13 @@ export default function SelectSlot() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Loading overlay */}
+      {loading && (
+        <View className="absolute inset-0 bg-black/20 items-center justify-center">
+          <ActivityIndicator size="large" color="#7B68EE" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
