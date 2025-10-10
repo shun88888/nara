@@ -22,7 +22,7 @@ export default function RootLayout() {
       <StripeProvider
         publishableKey={
           process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-          '***REMOVED***'
+          'pk_test_51SGUOWEvoa9Jwsqv8xXfnsEYDNfr86sptpjKjBLr6ZGuFcDEhgcTWgdz76ZRJ2Cl8G678fSvrWgDDtAPV0loRjSB00ZOVbeJxQ'
         }
         merchantIdentifier="app.kikkake.mobile"
       >

@@ -13,7 +13,11 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '***REMOVED***';
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  console.error('Error: STRIPE_SECRET_KEY environment variable is required');
+  process.exit(1);
+}
 const SUPABASE_PROJECT_REF = process.env.SUPABASE_PROJECT_REF || 'nzkcktausubexsfoqloo';
 const ENDPOINT_URL = `https://${SUPABASE_PROJECT_REF}.functions.supabase.co/stripe-webhook`;
 
