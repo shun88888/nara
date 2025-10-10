@@ -1,59 +1,87 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-
-type PaymentMethod = {
-  id: string;
-  type: 'card' | 'bank';
-  last4: string;
-  brand?: string;
-  isDefault: boolean;
-};
+import { getSavedCards, setDefaultPaymentMethod, deletePaymentMethod, getOrCreateStripeCustomer, createEphemeralKey, createSetupIntent } from '../../../src/services/api/bookings';
+import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
 
 export default function PaymentMethods() {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    {
-      id: '1',
-      type: 'card',
-      last4: '4242',
-      brand: 'Visa',
-      isDefault: true,
-    },
-    {
-      id: '2',
-      type: 'card',
-      last4: '5555',
-      brand: 'Mastercard',
-      isDefault: false,
-    },
-  ]);
+  const [cards, setCards] = useState<{ id: string; brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null }[]>([]);
+  const [defaultPmId, setDefaultPmId] = useState<string | null>(null);
+  const [sheetReady, setSheetReady] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [overlay, setOverlay] = useState(false);
 
-  const handleSetDefault = (id: string) => {
-    setPaymentMethods(methods =>
-      methods.map(m => ({
-        ...m,
-        isDefault: m.id === id,
-      }))
-    );
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const list = await getSavedCards();
+      setCards(list.cards || []);
+      setDefaultPmId(list.defaultPaymentMethodId || null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultPaymentMethod(id);
+      setDefaultPmId(id);
+    } catch (e: any) {
+      Alert.alert('エラー', e.message || 'デフォルト設定に失敗しました');
+    }
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert(
-      '支払い方法を削除',
-      '本当に削除しますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: () => {
-            setPaymentMethods(methods => methods.filter(m => m.id !== id));
-          },
-        },
-      ]
-    );
+    Alert.alert('支払い方法を削除', '本当に削除しますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '削除', style: 'destructive', onPress: async () => {
+          try {
+            await deletePaymentMethod(id);
+            await refresh();
+          } catch (e: any) {
+            Alert.alert('エラー', e.message || '削除に失敗しました');
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleAddCard = async () => {
+    try {
+      setOverlay(true);
+      if (!sheetReady) {
+        const { customerId } = await getOrCreateStripeCustomer();
+        const { ephemeralKeySecret } = await createEphemeralKey();
+        const { setupIntentClientSecret } = await createSetupIntent();
+        const init = await initPaymentSheet({
+          customerId,
+          customerEphemeralKeySecret: ephemeralKeySecret,
+          setupIntentClientSecret,
+          merchantDisplayName: 'nara',
+          returnURL: 'kikkake://stripe-redirect',
+        });
+        if (init.error) throw new Error(init.error.message);
+        setSheetReady(true);
+      }
+      const res = await presentPaymentSheet();
+      if (res.error && res.error.code !== 'Canceled') {
+        Alert.alert('エラー', 'カード追加に失敗しました');
+        return;
+      }
+      await refresh();
+      Alert.alert('完了', 'カードを追加しました');
+    } catch (e: any) {
+      Alert.alert('エラー', e.message || 'カード追加に失敗しました');
+    } finally {
+      setOverlay(false);
+    }
   };
 
   const getCardIcon = (brand?: string) => {
@@ -85,7 +113,11 @@ export default function PaymentMethods() {
       <ScrollView className="flex-1">
         {/* Payment Methods List */}
         <View className="px-4 py-4">
-          {paymentMethods.length === 0 ? (
+          {loading ? (
+            <View className="bg-white rounded-xl p-8 items-center">
+              <ActivityIndicator size="large" color="#7B68EE" />
+            </View>
+          ) : cards.length === 0 ? (
             <View className="bg-white rounded-xl p-8 items-center">
               <Ionicons name="card-outline" size={64} color="#CCC" />
               <Text className="text-[#999] text-base mt-4 text-center">
@@ -93,7 +125,7 @@ export default function PaymentMethods() {
               </Text>
             </View>
           ) : (
-            paymentMethods.map((method) => (
+            cards.map((method) => (
               <View
                 key={method.id}
                 className="bg-white rounded-xl p-4 mb-3"
@@ -108,13 +140,13 @@ export default function PaymentMethods() {
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center flex-1">
                     <View className="w-12 h-12 rounded-lg bg-[#F0F0F0] items-center justify-center mr-3">
-                      <Ionicons name={getCardIcon(method.brand)} size={24} color="#666" />
+                      <Ionicons name={getCardIcon(method.brand || undefined)} size={24} color="#666" />
                     </View>
                     <View className="flex-1">
                       <Text className="text-black text-base font-bold mb-1">
-                        {method.brand} •••• {method.last4}
+                        {(method.brand || '').toUpperCase()} •••• {method.last4}
                       </Text>
-                      {method.isDefault && (
+                      {defaultPmId === method.id && (
                         <View className="bg-[#007AFF] px-2 py-1 rounded-md self-start">
                           <Text className="text-white text-xs font-medium">デフォルト</Text>
                         </View>
@@ -125,7 +157,7 @@ export default function PaymentMethods() {
 
                 {/* Actions */}
                 <View className="flex-row border-t border-[#F0F0F0] pt-3">
-                  {!method.isDefault && (
+                  {defaultPmId !== method.id && (
                     <TouchableOpacity
                       className="flex-1 mr-2"
                       onPress={() => handleSetDefault(method.id)}
@@ -136,7 +168,7 @@ export default function PaymentMethods() {
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
-                    className={method.isDefault ? 'flex-1' : 'flex-1 ml-2'}
+                    className={defaultPmId === method.id ? 'flex-1' : 'flex-1 ml-2'}
                     onPress={() => handleDelete(method.id)}
                   >
                     <View className="border border-[#FF3B30] rounded-lg py-2 items-center">
@@ -172,9 +204,7 @@ export default function PaymentMethods() {
         <View className="px-4 py-3">
           <TouchableOpacity
             className="bg-black rounded-lg py-4"
-            onPress={() => {
-              Alert.alert('支払い方法を追加', 'この機能は開発中です');
-            }}
+            onPress={handleAddCard}
           >
             <View className="flex-row items-center justify-center">
               <Ionicons name="add" size={20} color="#fff" />
@@ -185,6 +215,11 @@ export default function PaymentMethods() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+      {overlay && (
+        <View className="absolute inset-0 bg-black/20 items-center justify-center">
+          <ActivityIndicator size="large" color="#7B68EE" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

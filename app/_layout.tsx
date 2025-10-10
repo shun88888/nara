@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { useAuthStore } from '../src/stores/auth';
 import { useUIStore } from '../src/stores/ui';
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 export default function RootLayout() {
   const navRef = useNavigationContainerRef();
@@ -18,8 +19,16 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'light'} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <StripeProvider
+        publishableKey={
+          process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+          '***REMOVED***'
+        }
+        merchantIdentifier="app.kikkake.mobile"
+      >
+        <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'light'} />
+        <Stack screenOptions={{ headerShown: false }} />
+      </StripeProvider>
     </SafeAreaProvider>
   );
 }

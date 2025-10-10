@@ -9,6 +9,7 @@ import {
   refreshQRToken as refreshQRTokenAPI,
   type CreateBookingParams,
 } from '../services/api';
+import { useExperienceStore } from './experience';
 
 export type Booking = {
   id: string;
@@ -50,11 +51,29 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       const booking = await createBookingAPI(params);
 
+      // Enrich with experience title/provider immediately to avoid blank UI
+      const expStore = useExperienceStore.getState();
+      let experienceTitle = '';
+      let providerName: string | undefined = undefined;
+      const cachedExp = expStore.getCachedExperienceById(booking.experience_id);
+      if (cachedExp) {
+        experienceTitle = cachedExp.title;
+        providerName = cachedExp.providerName;
+      } else {
+        try {
+          const fetched = await expStore.getExperienceById(booking.experience_id);
+          if (fetched) {
+            experienceTitle = fetched.title;
+            providerName = fetched.providerName;
+          }
+        } catch {}
+      }
+
       // Transform to store format
       const storeBooking: Booking = {
         id: booking.id,
         experienceId: booking.experience_id,
-        experienceTitle: '', // Will be populated by fetchBookings
+        experienceTitle,
         startAt: booking.start_at,
         status: booking.status,
         qrToken: booking.qr_token,
@@ -62,6 +81,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         paymentMethod: booking.payment_method || undefined,
         childName: booking.child_name,
         guardianName: booking.guardian_name,
+        providerName,
       };
 
       // Add to upcoming bookings
@@ -200,12 +220,17 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       await cancelBookingAPI(id);
 
-      // Update local state
-      set((state) => ({
-        upcoming: state.upcoming.map((b) =>
-          b.id === id ? { ...b, status: 'canceled' as const } : b
-        ),
-      }));
+      // Update local state: move canceled item to past with updated status
+      set((state) => {
+        const target = state.upcoming.find((b) => b.id === id) || null;
+        const updatedUpcoming = state.upcoming
+          .map((b) => (b.id === id ? { ...b, status: 'canceled' as const } : b))
+          .filter((b) => b.id !== id);
+        const updatedPast = target
+          ? [{ ...target, status: 'canceled' as const }, ...state.past]
+          : state.past;
+        return { upcoming: updatedUpcoming, past: updatedPast };
+      });
     } catch (error: any) {
       console.error('Failed to cancel booking:', error);
       throw error;

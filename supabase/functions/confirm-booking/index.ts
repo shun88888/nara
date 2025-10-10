@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
 import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts';
+// Use Stripe REST API via fetch to avoid npm deps in Deno Edge Functions
 
 const SERVER_SECRET = Deno.env.get('QR_SECRET') || 'your-secret-key-change-this';
 
@@ -11,10 +12,11 @@ interface BookingRequest {
   childAge: number;
   guardianName: string;
   guardianPhone: string;
-  startAt: string; // ISO 8601 timestamp
+  startAt?: string; // ISO 8601 timestamp (optional fallback to now)
   paymentMethod?: string;
   notes?: string;
   couponCode?: string;
+  stripePaymentIntentId?: string;
 }
 
 interface QRPayload {
@@ -50,18 +52,17 @@ serve(async (req) => {
   try {
     // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const authHeader = req.headers.get('Authorization')!;
+    // Use service role to bypass RLS for bookings insert (Authorization header still identifies the user)
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authHeader = req.headers.get('Authorization') || '';
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: authHeader ? { Authorization: authHeader } : {} },
     });
 
     // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    const user = userData?.user || null;
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -73,14 +74,13 @@ serve(async (req) => {
     // Parse request body
     const bookingData: BookingRequest = await req.json();
 
-    // Validate required fields
+    // Validate required fields (startAt becomes optional; fallback to now)
     if (
       !bookingData.experienceId ||
       !bookingData.childName ||
       !bookingData.childAge ||
       !bookingData.guardianName ||
-      !bookingData.guardianPhone ||
-      !bookingData.startAt
+      !bookingData.guardianPhone
     ) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
@@ -102,6 +102,53 @@ serve(async (req) => {
       });
     }
 
+    // If payment method is credit, verify PaymentIntent status
+    let paymentStatus: 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded' = 'pending';
+    let stripePaymentIntentId: string | null = null;
+    const method = bookingData.paymentMethod || 'pending';
+    if (method === 'credit') {
+      const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+      if (!STRIPE_SECRET_KEY) {
+        return new Response(JSON.stringify({ error: 'Stripe secret not configured' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      const pid = bookingData.stripePaymentIntentId;
+      if (!pid) {
+        return new Response(JSON.stringify({ error: 'stripePaymentIntentId is required for credit payment' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      try {
+        const resp = await fetch(`https://api.stripe.com/v1/payment_intents/${pid}`, {
+          headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          return new Response(JSON.stringify({ error: 'Failed to verify payment intent', details: err }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        const pi = await resp.json();
+        if (pi.status !== 'succeeded') {
+          return new Response(JSON.stringify({ error: `Payment not completed: ${pi.status}` }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        paymentStatus = 'succeeded';
+        stripePaymentIntentId = pi.id;
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'Failed to verify payment intent' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Generate QR token
     const tempBookingId = crypto.randomUUID();
     const qrToken = generateQRToken(tempBookingId);
@@ -118,10 +165,11 @@ serve(async (req) => {
         child_age: bookingData.childAge,
         guardian_name: bookingData.guardianName,
         guardian_phone: bookingData.guardianPhone,
-        start_at: bookingData.startAt,
+        start_at: bookingData.startAt || new Date().toISOString(),
         status: 'confirmed',
-        payment_method: bookingData.paymentMethod || 'pending',
-        payment_status: 'pending', // Will be updated when Stripe is integrated
+        payment_method: method,
+        payment_status: method === 'credit' ? paymentStatus : 'pending',
+        stripe_payment_intent_id: stripePaymentIntentId,
         amount_yen: experience.price_yen,
         qr_token: qrToken,
         qr_expires_at: qrExpiresAt,

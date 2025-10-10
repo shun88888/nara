@@ -3,6 +3,8 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { useExperienceStore } from '../../../src/stores/experience';
+import { useFilterStore } from '../../../src/stores/filter';
+import { FilterModal } from '../../../src/components/FilterModal';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,14 +13,77 @@ const CARD_WIDTH = (SCREEN_WIDTH - 36) / 2; // 2 columns with tighter padding
 
 export default function Home() {
   const { experiences, fetchExperiences } = useExperienceStore();
+  const {
+    categories,
+    minPrice,
+    maxPrice,
+    targetAges,
+    durations,
+    minRating,
+    onlyAvailable,
+    loadFiltersFromStorage,
+    hasActiveFilters,
+  } = useFilterStore();
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'home' | 'recommended'>('home');
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
+  // Convert duration strings to min/max values
+  const getDurationRange = () => {
+    if (durations.length === 0) return { min: undefined, max: undefined };
+
+    let minDuration: number | undefined;
+    let maxDuration: number | undefined;
+
+    durations.forEach((duration) => {
+      if (duration === '30分以内') {
+        minDuration = Math.min(minDuration ?? Infinity, 0);
+        maxDuration = Math.max(maxDuration ?? -Infinity, 30);
+      } else if (duration === '30分-1時間') {
+        minDuration = Math.min(minDuration ?? Infinity, 30);
+        maxDuration = Math.max(maxDuration ?? -Infinity, 60);
+      } else if (duration === '1-2時間') {
+        minDuration = Math.min(minDuration ?? Infinity, 60);
+        maxDuration = Math.max(maxDuration ?? -Infinity, 120);
+      } else if (duration === '2時間以上') {
+        minDuration = Math.min(minDuration ?? Infinity, 120);
+        maxDuration = undefined;
+      }
+    });
+
+    return { min: minDuration, max: maxDuration };
+  };
+
+  // Load filters from storage on mount
   useEffect(() => {
-    fetchExperiences({ area: 'oimachi-line', onlyAvailable: true });
+    loadFiltersFromStorage();
   }, []);
 
-  const categories = ['すべて', 'アート', '料理', 'スポーツ', 'その他'];
+  // Fetch experiences when filters change
+  useEffect(() => {
+    const { min: minDuration, max: maxDuration } = getDurationRange();
+
+    fetchExperiences({
+      area: 'oimachi-line',
+      categories: categories.length > 0 ? categories : undefined,
+      category: selectedCategory || undefined,
+      minPrice: minPrice ?? undefined,
+      maxPrice: maxPrice ?? undefined,
+      targetAges: targetAges.length > 0 ? targetAges : undefined,
+      minDuration,
+      maxDuration,
+      minRating: minRating ?? undefined,
+      onlyAvailable,
+    });
+  }, [categories, minPrice, maxPrice, targetAges, durations, minRating, onlyAvailable, selectedCategory]);
+
+  const handleApplyFilters = () => {
+    // Filters are already applied via useEffect
+    setShowFilterModal(false);
+  };
+
+  const categoryOptions = ['すべて', 'アート', '料理', 'スポーツ', 'その他'];
 
   // Split experiences into two columns
   const leftColumn = experiences.filter((_, i) => i % 2 === 0);
@@ -122,34 +187,48 @@ export default function Home() {
       <View className="px-4 pt-2 pb-2">
         <Text className="text-3xl font-bold text-black mb-4">きっかけを探す</Text>
 
-        {/* Category Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="flex-row -mx-1"
-        >
-          {categories.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              className={`mx-1 px-4 py-2 rounded-full ${
-                selectedCategory === cat || (selectedCategory === null && cat === 'すべて')
-                  ? 'bg-black'
-                  : 'bg-[#f0f0f0]'
-              }`}
-              onPress={() => setSelectedCategory(cat === 'すべて' ? null : cat)}
-            >
-              <Text
-                className={`font-medium ${
+        {/* Filter Row */}
+        <View className="flex-row items-center mb-2">
+          {/* Filter Button */}
+          <TouchableOpacity
+            className="w-10 h-10 mr-2 rounded-full bg-[#F0F0F0] items-center justify-center"
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons name="options-outline" size={20} color="#666" />
+            {hasActiveFilters() && (
+              <View className="absolute top-1 right-1 w-2 h-2 bg-[#7B68EE] rounded-full" />
+            )}
+          </TouchableOpacity>
+
+          {/* Category Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row flex-1 -mx-1"
+          >
+            {categoryOptions.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                className={`mx-1 px-4 py-2 rounded-full ${
                   selectedCategory === cat || (selectedCategory === null && cat === 'すべて')
-                    ? 'text-white'
-                    : 'text-[#666]'
+                    ? 'bg-black'
+                    : 'bg-[#f0f0f0]'
                 }`}
+                onPress={() => setSelectedCategory(cat === 'すべて' ? null : cat)}
               >
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text
+                  className={`font-medium ${
+                    selectedCategory === cat || (selectedCategory === null && cat === 'すべて')
+                      ? 'text-white'
+                      : 'text-[#666]'
+                  }`}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       </View>
 
       {/* Pinterest-style Grid */}
@@ -177,6 +256,13 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }

@@ -19,8 +19,13 @@ type FetchParams = {
   area?: 'oimachi-line';
   onlyAvailable?: boolean;
   category?: string;
+  categories?: string[];
   minPrice?: number;
   maxPrice?: number;
+  targetAges?: string[];
+  minDuration?: number;
+  maxDuration?: number;
+  minRating?: number;
 };
 
 type ExperienceState = {

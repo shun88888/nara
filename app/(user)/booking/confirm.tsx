@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 const STORAGE_KEY = '@booking_info';
 
 export default function BookingConfirm() {
-  const { experienceId } = useLocalSearchParams<{ experienceId?: string }>();
+  const { experienceId, bookingData: incoming } = useLocalSearchParams<{ experienceId?: string; bookingData?: string }>();
   const [childName, setChildName] = useState('');
   const [age, setAge] = useState('');
   const [guardianName, setGuardianName] = useState('');
@@ -90,7 +90,10 @@ export default function BookingConfirm() {
       clearSavedInfo();
     }
     // Save booking info to pass to next screens
-    const bookingData = {
+    // Merge incoming bookingData (e.g., date/time from select-slot) with current form
+    const prev = incoming ? JSON.parse(incoming) : {};
+    const merged = {
+      ...prev,
       childName,
       age,
       guardianName,
@@ -98,7 +101,7 @@ export default function BookingConfirm() {
       coupon,
       notes,
     };
-    router.push(`/(user)/booking/payment?experienceId=${experienceId}&bookingData=${encodeURIComponent(JSON.stringify(bookingData))}`);
+    router.push(`/(user)/booking/payment?experienceId=${experienceId}&bookingData=${encodeURIComponent(JSON.stringify(merged))}`);
   };
 
   const phoneOk = isValidPhone(phone);

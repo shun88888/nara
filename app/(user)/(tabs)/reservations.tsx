@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Reservations() {
-  const { upcoming, past } = useBookingStore();
+  const { upcoming, past, cancelBooking } = useBookingStore();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [step2, setStep2] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -286,7 +286,14 @@ export default function Reservations() {
 
                 <TouchableOpacity
                   className="bg-[#F44336] rounded-lg py-4 mb-3"
-                  onPress={() => setConfirmId(null)}
+                  onPress={async () => {
+                    if (!confirmId) return;
+                    try {
+                      await cancelBooking(confirmId);
+                    } finally {
+                      setConfirmId(null);
+                    }
+                  }}
                 >
                   <Text className="text-center text-white font-bold text-base">
                     キャンセルを確定する

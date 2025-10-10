@@ -3,14 +3,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
 import { useBookingStore } from '../../../src/stores/booking';
+import { useExperienceStore } from '../../../src/stores/experience';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function QRScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const { getBooking, refreshQrToken } = useBookingStore();
-  const booking = bookingId ? getBooking(bookingId) : null;
+  const [booking, setBooking] = useState<any | null>(null);
+  const { getExperienceById, getCachedExperienceById } = useExperienceStore();
   const [ttl, setTtl] = useState(600);
+  useEffect(() => {
+    (async () => {
+      if (!bookingId) return;
+      const b = await getBooking(bookingId);
+      setBooking(b);
+    })();
+  }, [bookingId]);
+
 
   useEffect(() => {
     const timer = setInterval(() => setTtl(t => Math.max(0, t - 1)), 1000);
@@ -22,6 +32,12 @@ export default function QRScreen() {
       <Text className="text-black">予約が見つかりません</Text>
     </SafeAreaView>
   );
+
+  // Ensure experience title is available
+  const exp = booking.experienceId ? getCachedExperienceById(booking.experienceId) : null;
+  if (!exp && booking.experienceId) {
+    getExperienceById(booking.experienceId);
+  }
 
   const bookingDate = new Date(booking.startAt);
   const dateStr = `${bookingDate.getFullYear()}年${bookingDate.getMonth() + 1}月${bookingDate.getDate()}日`;
@@ -59,7 +75,7 @@ export default function QRScreen() {
               <Ionicons name="calendar-outline" size={20} color="#666" />
               <View className="ml-3 flex-1">
                 <Text className="text-[#666] text-sm mb-1">体験名</Text>
-                <Text className="text-black text-base font-medium">{booking.experienceTitle}</Text>
+                <Text className="text-black text-base font-medium">{booking.experienceTitle || exp?.title || ''}</Text>
               </View>
             </View>
 

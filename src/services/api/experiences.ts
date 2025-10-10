@@ -9,12 +9,18 @@ export interface ExperienceWithProviderName extends Experience {
 }
 
 /**
- * Fetch all published experiences
+ * Fetch all published experiences with optional filters
  */
 export async function getExperiences(params?: {
+  categories?: string[];
   category?: string;
   minPrice?: number;
   maxPrice?: number;
+  targetAges?: string[];
+  minDuration?: number;
+  maxDuration?: number;
+  minRating?: number;
+  onlyAvailable?: boolean;
 }): Promise<ExperienceWithProviderName[]> {
   let query = supabase
     .from('experiences')
@@ -24,10 +30,14 @@ export async function getExperiences(params?: {
     `)
     .eq('is_published', true);
 
-  if (params?.category) {
+  // Category filter (support both single and multiple)
+  if (params?.categories && params.categories.length > 0) {
+    query = query.in('category', params.categories);
+  } else if (params?.category) {
     query = query.eq('category', params.category);
   }
 
+  // Price range filter
   if (params?.minPrice !== undefined) {
     query = query.gte('price_yen', params.minPrice);
   }
@@ -36,17 +46,57 @@ export async function getExperiences(params?: {
     query = query.lte('price_yen', params.maxPrice);
   }
 
+  // Duration filter
+  if (params?.minDuration !== undefined) {
+    query = query.gte('duration_min', params.minDuration);
+  }
+
+  if (params?.maxDuration !== undefined) {
+    query = query.lte('duration_min', params.maxDuration);
+  }
+
   const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     throw new Error(`Failed to fetch experiences: ${error.message}`);
   }
 
-  // Transform data to match expected format
-  return (data || []).map((exp: any) => ({
+  let experiences = (data || []).map((exp: any) => ({
     ...exp,
     providerName: exp.providers?.business_name || '',
   }));
+
+  // Client-side filtering for target ages (since it's stored as string)
+  if (params?.targetAges && params.targetAges.length > 0) {
+    const targetAges = params.targetAges;
+    experiences = experiences.filter((exp) => {
+      if (!exp.target_age) return false;
+      // Check if any selected age range overlaps with the experience's target age
+      return targetAges.some((age) => {
+        // Simple matching - can be enhanced based on actual data format
+        return exp.target_age.includes(age) ||
+               exp.target_age.includes(age.replace('歳', '')) ||
+               exp.target_age.includes(age.split('-')[0]);
+      });
+    });
+  }
+
+  // Filter by availability (check if has available time slots)
+  if (params?.onlyAvailable) {
+    const experienceIds = experiences.map((exp) => exp.id);
+
+    const { data: slots } = await supabase
+      .from('available_time_slots')
+      .select('experience_id')
+      .in('experience_id', experienceIds)
+      .gte('date', new Date().toISOString().split('T')[0])
+      .gt('remaining_capacity', 0);
+
+    const availableIds = new Set((slots || []).map((slot: any) => slot.experience_id));
+    experiences = experiences.filter((exp) => availableIds.has(exp.id));
+  }
+
+  return experiences;
 }
 
 /**

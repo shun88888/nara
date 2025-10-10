@@ -270,8 +270,8 @@ export default function SelectSlot() {
               const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
               const bookingData = JSON.stringify({
                 date: dateStr,
-                startTime: selectedTimeSlot.start_time,
-                endTime: selectedTimeSlot.end_time,
+                startTime: selectedTimeSlot.start_time.substring(0, 5),
+                endTime: selectedTimeSlot.end_time.substring(0, 5),
                 slotId: selectedTimeSlot.id,
               });
               router.push(`/(user)/booking/confirm?experienceId=${experienceId}&bookingData=${encodeURIComponent(bookingData)}`);

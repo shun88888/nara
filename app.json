@@ -35,6 +35,9 @@
       "predictiveBackGestureEnabled": false,
       "package": "app.kikkake.mobile"
     },
+    "locales": {
+      "ja": "./assets/strings/ja.json"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },

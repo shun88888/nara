@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/database.types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
+
 type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
 
 export interface BookingWithExperience extends Booking {
@@ -16,7 +17,8 @@ export interface CreateBookingParams {
   guardianName: string;
   guardianPhone: string;
   startAt: string;
-  paymentMethod?: string;
+  paymentMethod?: 'credit' | 'onsite';
+  stripePaymentIntentId?: string;
   notes?: string;
   couponCode?: string;
 }
@@ -41,6 +43,122 @@ export async function createBooking(params: CreateBookingParams): Promise<Bookin
   }
 
   return data.booking;
+}
+
+/**
+ * Create a Stripe PaymentIntent via Edge Function
+ */
+export async function createPaymentIntent(params: { experienceId: string; couponCode?: string; customerId?: string }): Promise<{
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+}> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+    body: params,
+  });
+
+  if (error) {
+    throw new Error(`Failed to create payment intent: ${error.message}`);
+  }
+
+  return data as any;
+}
+
+/**
+ * Get or create Stripe Customer for current user
+ */
+export async function getOrCreateStripeCustomer(): Promise<{ customerId: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('create-or-get-customer');
+  if (error) throw new Error(`Failed to get customer: ${error.message}`);
+  return data as any;
+}
+
+/**
+ * Create Ephemeral Key for PaymentSheet
+ */
+export async function createEphemeralKey(): Promise<{ customerId: string; ephemeralKeySecret: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('create-ephemeral-key', {
+    headers: { 'Stripe-Version': '2024-06-20' },
+  } as any);
+  if (error) throw new Error(`Failed to create ephemeral key: ${error.message}`);
+  return data as any;
+}
+
+/**
+ * Create SetupIntent for adding a card
+ */
+export async function createSetupIntent(): Promise<{ customerId: string; setupIntentClientSecret: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('create-setup-intent');
+  if (error) throw new Error(`Failed to create setup intent: ${error.message}`);
+  return data as any;
+}
+
+/**
+ * Check if user has saved card in Stripe
+ */
+export async function hasSavedCard(): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('list-payment-methods');
+  if (error) throw new Error(`Failed to list payment methods: ${error.message}`);
+  return Boolean((data as any)?.hasSavedCard);
+}
+
+/**
+ * Get saved card summary (brand, last4, exp)
+ */
+export async function getSavedCardSummary(): Promise<{ hasSavedCard: boolean; summary?: { brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null } }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('list-payment-methods');
+  if (error) throw new Error(`Failed to list payment methods: ${error.message}`);
+  return data as any;
+}
+
+/**
+ * Charge saved card off-session
+ */
+export async function chargeSavedCard(params: { amountYen: number; experienceId: string }): Promise<{ paymentIntentId: string; status: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('charge-saved-card', {
+    body: { amount_yen: params.amountYen, experienceId: params.experienceId },
+  });
+  if (error) throw new Error(`Failed to charge card: ${error.message}`);
+  return data as any;
+}
+
+export async function getSavedCards(): Promise<{ customerId: string; defaultPaymentMethodId: string | null; cards: { id: string; brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null }[] }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { data, error } = await supabase.functions.invoke('list-payment-methods');
+  if (error) throw new Error(`Failed to list payment methods: ${error.message}`);
+  return data as any;
+}
+
+export async function setDefaultPaymentMethod(paymentMethodId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { error } = await supabase.functions.invoke('set-default-payment-method', { body: { payment_method_id: paymentMethodId } });
+  if (error) throw new Error(`Failed to set default: ${error.message}`);
+}
+
+export async function deletePaymentMethod(paymentMethodId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const { error } = await supabase.functions.invoke('delete-payment-method', { body: { payment_method_id: paymentMethodId } });
+  if (error) throw new Error(`Failed to delete card: ${error.message}`);
 }
 
 /**
