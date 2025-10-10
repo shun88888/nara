@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ensureConversationForBooking } from '../../../src/services/dm';
 import { useState, useEffect, useRef } from 'react';
 import { isValidPhone } from '../../../src/lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';

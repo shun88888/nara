@@ -191,7 +191,17 @@ export default function QRScreen() {
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity className="flex-row items-center justify-between bg-[#F8F8F8] p-4 rounded-lg">
+          <TouchableOpacity className="flex-row items-center justify-between bg-[#F8F8F8] p-4 rounded-lg"
+            onPress={async () => {
+              try {
+                const { getOrCreateConversation } = await import('../../../src/services/api/messages');
+                const convId = await getOrCreateConversation(booking.id);
+                router.push(`/(user)/messages/${convId}`);
+              } catch (e) {
+                console.warn(e);
+              }
+            }}
+          >
             <View className="flex-row items-center flex-1">
               <Ionicons name="chatbubble-outline" size={20} color="#666" />
               <View className="ml-3">

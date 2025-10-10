@@ -122,39 +122,23 @@ export default function ExperienceDetail() {
               <Ionicons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
 
-            <View className="flex-row">
-              <TouchableOpacity
-                className="w-12 h-12 rounded-full bg-white items-center justify-center mr-2"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3
-                }}
-              >
-                <Ionicons name="chatbubble-outline" size={22} color="#000" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="w-12 h-12 rounded-full bg-white items-center justify-center mr-2"
-                onPress={handleToggleFavorite}
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3
-                }}
-              >
-                <Ionicons
-                  name={isExpFavorite ? "heart" : "heart-outline"}
-                  size={22}
-                  color={isExpFavorite ? "#FF6B9D" : "#000"}
-                />
-              </TouchableOpacity>
-
-            </View>
+            <TouchableOpacity
+              className="w-12 h-12 rounded-full bg-white items-center justify-center"
+              onPress={handleToggleFavorite}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3
+              }}
+            >
+              <Ionicons
+                name={isExpFavorite ? "heart" : "heart-outline"}
+                size={22}
+                color={isExpFavorite ? "#FF6B9D" : "#000"}
+              />
+            </TouchableOpacity>
           </SafeAreaView>
 
           {/* Photo Gallery Button */}

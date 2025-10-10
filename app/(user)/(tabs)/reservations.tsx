@@ -1,15 +1,27 @@
 import { View, Text, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBookingStore } from '../../../src/stores/booking';
+import { useAuthStore } from '../../../src/stores/auth';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Reservations() {
-  const { upcoming, past, cancelBooking } = useBookingStore();
+  const { session } = useAuthStore();
+  const { upcoming, past, cancelBooking, fetchBookings } = useBookingStore();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [step2, setStep2] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  // Fetch bookings whenever this tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (session?.userId) {
+        fetchBookings(session.userId);
+      }
+    }, [session?.userId])
+  );
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
